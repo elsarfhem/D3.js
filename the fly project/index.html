@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="application/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <script type="application/javascript" src="js/jquery-3.3.1.min.js"></script>
+    <script type="application/javascript" src="js/main.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<script type="application/javascript">
+    $(function () {
+        var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .style("border", "1px solid black");
+
+        var imgs = svg.selectAll("image").data([0]);
+        var fly = imgs.enter()
+            .append("svg:image")
+            .attr("xlink:href", "img/fly.png");
+
+        fly.attr("x", getX())
+            .attr("y", getY())
+            .attr("width", "50")
+            .attr("height", "50");
+
+        move();
+
+        function move() {
+            var x = getX();
+            var y = getY();
+
+            if(currentX < 0){
+                currentX = width;
+                x = width;
+                fly.attr("x", currentX)
+            } else if (currentX > width){
+                currentX = 0;
+                x = 0;
+                fly.attr("x", currentX)
+            }
+
+            if(currentY < 0){
+                currentY = height;
+                y = height;
+                fly.attr("y", currentY)
+            } else if (currentY > height){
+                currentY = 0;
+                y = 0;
+                fly.attr("y", currentY)
+            }
+
+            fly.transition()
+                .duration(animationDuration)
+                .ease(d3.easeLinear)
+                .attr("x", x)
+                .attr("y", y)
+                .on("end", move);
+        }
+    });
+
+
+</script>
+
+</body>
+</html>

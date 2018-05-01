@@ -1,3 +1,3 @@
-# 3D.js project
+# 3D.js projects
 
 The fly
