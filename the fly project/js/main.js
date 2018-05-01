@@ -5,14 +5,15 @@ var currentX = width / 2;
 var currentY = height / 2;
 
 var delta = 50;
-var animationDuration = 270;
+var flyAnimationDuration = 270;
+var flyDownAnimation = 700;
 
-function getX() {
+function moveX() {
     currentX += getRandom() * getSign();
     return currentX % width;
 }
 
-function getY() {
+function moveY() {
     currentY += getRandom() * getSign();
     return currentY % height;
 }
