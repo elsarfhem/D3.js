@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Age</title>
+    <script type="application/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body>
+<svg width="500" height="400"></svg>
+<script type="application/javascript">
+    var svg = d3.select("svg")
+    var height = 400;
+    var width = 500;
+    var dataset
+
+    d3.json("http://localhost:63342/D3.js/data/example.json")
+        .then(function (dataset) {
+
+            this.dataset = dataset
+            var data = dataset[0]["ageGroups"];
+            var maxY = d3.max(data.map(function (el) {
+                return el.population
+            }));
+
+            console.log(`max y is ${maxY}`)
+
+            var x = d3.scaleBand()
+                .domain(["0-4", "5-9", "10-14"])
+                .range([0, width])
+                .padding(0.1);
+            var y = d3.scaleLinear()
+                .domain([0, maxY])
+                .range([height, 0]);
+            var bar = svg.selectAll(".bar")
+                .data(data, function (d) {
+                    return d.ageGroup
+                })
+
+            bar.enter()
+                .append("rect")
+                .attr("class", "bar")
+                .attr("x", function (d) {
+                    return x(d.ageGroup)
+                })
+                .attr("y", function (d) {
+                    return y(d.population)
+                })
+                .attr("height", function (d) {
+                    return height - y(d.population)
+                })
+                .attr("width", x.bandwidth())
+                .attr("fill", "blue")
+
+        })
+        .catch(function (err) {
+            console.error(err)
+        })
+
+    function updateDrawing(data) {
+
+        var values = data["ageGroups"];
+        var maxY = d3.max(values.map(function (el) {
+            return el.population
+        }));
+        var x = d3.scaleBand()
+            .domain(["0-4", "5-9", "10-14"])
+            .range([0, width])
+            .padding(0.1);
+        var y = d3.scaleLinear()
+            .domain([0, maxY])
+            .range([height, 0]);
+
+
+        // Data join
+        var bar = svg.selectAll(".bar").data(values, function (d) {
+            return d.ageGroup
+        });
+        // Exit clause: Remove elements
+        bar.exit().remove();
+        // Enter clause: Add elements
+        bar.enter().append("rect").attr("class", "bar")
+            .attr("width", x.bandwidth())
+        // Enter + Update clause: Update y and height
+        bar.transition().duration(300)
+            .attr("y", function (d) {
+                return y(d.population);
+            })
+            .attr("x", function (d) {
+                return x(d.ageGroup)
+            })
+            .attr("width", x.bandwidth())
+            .attr("height", function (d) {
+                return height - y(d.population);
+            });
+    }
+</script>
+</body>
+</html>
