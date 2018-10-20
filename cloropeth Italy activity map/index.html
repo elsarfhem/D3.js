@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3-geomap.github.io/d3-geomap/vendor/d3.geomap.dependencies.min.js#v=#v=1"></script>
+  <script src="https://d3-geomap.github.io/d3-geomap/js/d3.geomap.min.js#v=#v=1"></script>
+  <script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    .cursor {
+      cursor: pointer;
+    }
+    
+    .cursor:hover {
+      opacity: 0.5;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="map" style="width:50%; float:left;">
+    <div id="legend"></div>
+    <div>
+      <select id="selectActivity" onchange="changedActivity()">
+        <option value="adventure">adventure</option>
+        <option value="airboat">airboat</option>
+        <option value="airplane">airplane</option>
+        <option value="airport">airport</option>
+        <option value="art">art</option>
+        <option value="attraction">attraction</option>
+        <option value="aquarium">aquarium</option>
+        <option value="bar">bar</option>
+        <option value="beach">beach</option>
+        <option value="bike">bike</option>
+        <option value="boat">boat</option>
+        <option value="building">building</option>
+        <option value="bus">bus</option>
+        <option value="club">club</option>
+        <option value="discount">discount</option>
+        <option value="entertainment">entertainment</option>
+        <option value="excursion">excursion</option>
+        <option value="fashion">fashion</option>
+        <option value="food">food</option>
+        <option value="helicopter">helicopter</option>
+        <option value="highlights">highlights</option>
+        <option value="historic">historic</option>
+        <option value="island">island</option>
+        <option value="kayak">kayak</option>
+        <option value="mountain">mountain</option>
+        <option value="museum">museum</option>
+        <option value="music">music</option>
+        <option value="night">night</option>
+        <option value="rent_bike">rent_bike</option>
+        <option value="rent_car">rent_car</option>
+        <option value="rent_ski">rent_ski</option>
+        <option value="safari">safari</option>
+        <option value="segway">segway</option>
+        <option value="shared_shuttle">shared_shuttle</option>
+        <option value="shopping">shopping</option>
+        <option value="sightseeing">sightseeing</option>
+        <option value="ticket">ticket</option>
+        <option value="tour">tour</option>
+        <option value="train">train</option>
+        <option value="walking_tour">walking_tour</option>
+        <option value="watersport">watersport</option>
+        <option value="wine">wine</option>
+        <option value="zoo">zoo</option>
+      </select>
+      <input type="button" value="reset" onclick="clearSelection()"/>
+    </div>
+  </div>
+  <div style="width:50%; float:left;">
+    <div id="bar" style="width:50%;"></div>
+    <div id="bar2" style="width:50%;"></div>
+  </div>
+
+  <script>
+    var provinces = new Set()
+    var width = 500,
+      height = 500,
+      lw = 250,
+      lh = 20
+    var svg = d3.select("#map").append("svg")
+      .attr("width", width)
+      .attr("height", height);
+
+    var svgLegend = d3.select("#legend")
+      .append("svg")
+      .attr("width", lw)
+      .attr("height", lh)
+
+    //Append a defs (for definition) element to your SVG
+    var defs = svgLegend.append("defs")
+    var linearGradient = defs.append("linearGradient")
+      .attr("id", "linear-gradient")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "0%")
+
+    var legendRect = svgLegend
+      .append("rect")
+      .attr("width", lw)
+      .attr("height", lh)
+
+    legendRect.attr("fill", "url(#linear-gradient)")
+
+    function changedActivity() {
+      drawMap()
+      drawCharts()
+    }
+    
+    function clearSelection(){
+      provinces.clear()
+      drawCharts()
+    }
+    
+    function drawCharts(elem) {
+      d3.select("#bar").selectAll("svg").remove()
+      provinces.add(elem)
+      for(p of provinces){
+        drawBar(p)
+      }
+    }
+
+
+    function drawMap() {
+
+      var activity = document.getElementById("selectActivity").value;
+
+      d3.csv("values.csv").then(function(rows) {
+
+        var maxActivityValue = d3.max(rows, function(row) {
+          return +row[activity]
+        })
+
+        var color = d3.scale.linear().domain([0, maxActivityValue])
+          .interpolate(d3.interpolateHcl)
+          .range([d3.rgb("#ffffff"), d3.rgb('#3b00fe')])
+
+        var x = d3.scale.linear().domain([0, maxActivityValue]).range([0, lw * 0.96])
+
+        var legendTicks = [0, maxActivityValue]
+        var colorTicks = Array.from({
+          length: parseInt(maxActivityValue) + 1
+        }, (x, i) => i)
+
+        //Append a linearGradient element to the defs and give it a unique id
+        var stop = linearGradient.selectAll("stop")
+          .data(colorTicks)
+
+        stop.exit().remove()
+
+        stop.enter().append("stop")
+          .attr("offset", function(d, i) {
+            return i / colorTicks.length;
+          })
+          .attr("stop-color", function(d) {
+            return color(d)
+          })
+
+        stop.transition().duration(500)
+          .attr("offset", function(d, i) {
+            return i / colorTicks.length;
+          })
+          .attr("stop-color", function(d) {
+            return color(d)
+          })
+
+        var legendText = svgLegend
+          .selectAll("text")
+          .data(legendTicks)
+
+        legendText.exit().remove()
+
+        legendText.enter()
+          .append("text")
+          .attr("x", function(d) {
+            return x(d)
+          })
+          .attr("y", "15")
+          .attr("font-size", "10")
+          .attr("fill", "black")
+          .text(function(d) {
+            return d
+          })
+        legendText.transition().duration(500)
+          .attr("x", function(d) {
+            return x(d)
+          })
+          .text(function(d) {
+            return d
+          })
+
+        d3.json("it.json").then(function(it) {
+          var projection = d3.geo.albers()
+            .center([0, 41])
+            .rotate([347, 0])
+            .parallels([35, 45])
+            .scale(2000)
+            .translate([width / 2, height / 2]);
+          var subunits = topojson.feature(it, it.objects.sub);
+
+          var path = d3.geo.path()
+            .projection(projection);
+
+          // draw border with sea
+          var border = svg.selectAll("path")
+            .data([topojson.mesh(it, it.objects.sub, function(a, b) {
+              return a === b;
+            })])
+
+          border.exit().remove()
+
+          border.enter().append("path")
+            .attr("class", "border_map")
+            .attr("fill-opacity", "0")
+            .attr("d", path);
+
+          // draw and style any feature at time
+          var polygon = svg.selectAll("path")
+            .data(topojson.feature(it, it.objects.sub).features)
+
+          polygon.exit().remove()
+
+          polygon.enter().append("path")
+            .attr("id", function(d) {
+              return d.properties.hcom_geo_id;
+            })
+            .attr("title", function(d) {
+              return d.id;
+            })
+            .attr("onclick", "drawCharts(this)")
+            .attr("class", "selectable cursor")
+            .attr("d", path)
+            .attr("stroke", "black")
+            .attr("stroke-width", "0.5")
+            .attr("fill", function(d) {
+              var province = rows.filter(function(row) {
+                return row.hcom_geo_id == d.properties.hcom_geo_id
+              })
+              if (province[0] != null) {
+                return color(province[0][activity])
+              }
+            })
+        })
+      })
+    }
+
+    function drawBar(elem) {
+      var activity = document.getElementById("selectActivity").value;
+      var canvasWidth = 500,
+        canvasHeight = 250,
+        margin = {
+          top: 20,
+          right: 0,
+          bottom: 70,
+          left: 25
+        },
+        width = canvasWidth - margin.left - margin.right,
+        height = canvasHeight - margin.top - margin.bottom
+
+      d3.csv("values.csv").then(function(rows) {
+        var selectedProvinceData = rows.filter(function(row) {
+          return row.hcom_geo_id === elem.id
+        })[0]
+        
+        console.log(selectedProvinceData)
+
+        var maxActivityValue = d3.max([selectedProvinceData], function(row) {
+          var array = Object.values(row)
+          array.shift()
+          array.pop()
+          return d3.max(array, function(elem) {
+            return +elem
+          })
+        })
+
+        var activityLabels = Object.keys(selectedProvinceData)
+        activityLabels.shift()
+        activityLabels.pop()
+
+        // set the dimensions and margins of the graph
+        var x = d3.scaleBand()
+          .padding(0.1)
+          .rangeRound([0, width])
+          .domain(activityLabels)
+
+        var y = d3.scaleLinear()
+          .domain([0, maxActivityValue])
+          .rangeRound([height, 0])
+
+        var svg = d3.select("#bar").append("svg")
+          .attr("width", canvasWidth)
+          .attr("height", canvasHeight)
+          .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        var data = flatten(Object.keys(selectedProvinceData).map((key) => [({
+          activity: key,
+          value: selectedProvinceData[key]
+        })]))
+
+        data.shift()
+        data.pop()
+
+        // append the bar rectangles to the svg element
+        svg.selectAll(".bar")
+          .data(data)
+          .enter().append("rect")
+          .attr("class", "bar")
+          .attr("x", function(d) {
+            return x(d.activity)
+          })
+          .attr("y", function(d) {
+            return y(d.value)
+          })
+          .attr("width", x.bandwidth())
+          .attr("height", function(d) {
+            return height - y(d.value)
+          })
+
+        // add the x Axis
+        svg.append("g")
+          .attr("transform", "translate(0," + height + ")")
+          .call(d3.axisBottom(x))
+          .selectAll("text")
+          .style("text-anchor", "end")
+          .attr("dx", "-.8em")
+          .attr("dy", ".15em")
+          .attr("font-size", "11px")
+          .attr("transform", "rotate(-65)");
+
+        // add the y Axis
+        svg.append("g")
+          .call(d3.axisLeft(y))
+          .append("text")
+          .attr("fill", "#000")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", "0.71em")
+          .attr("text-anchor", "end")
+          .text(selectedProvinceData.name);
+
+        /*
+         */
+      })
+    }
+
+    function flatten(arr) {
+      return arr.reduce(function(flat, toFlatten) {
+        return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
+      }, []);
+    }
+
+    $(document).ready(drawMap)
+  </script>
+</body>
+
+</html>
